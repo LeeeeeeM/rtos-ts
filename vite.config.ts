@@ -9,11 +9,11 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
-      dts({
+      ...(isLibrary ? [dts({
         insertTypesEntry: true,
-        include: ['lib/**/*', 'src/**/*'],
-        exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts']
-      })
+        include: ['lib/**/*'], // 只包含库文件，不包含 src
+        exclude: ['src/**/*', 'tests/**/*']
+      })] : [])
     ],
     build: isLibrary ? {
       lib: {
