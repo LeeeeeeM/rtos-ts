@@ -1,5 +1,5 @@
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Routes,
   Route,
   Link,
@@ -12,15 +12,18 @@ import {
   FunctionOutlined,
   PauseOutlined,
 } from "@ant-design/icons";
-import BasicExample from "./components/BasicExample";
-import TaskParserExample from "./components/TaskParserExample";
-import SuspendExample from "./components/SuspendExample";
+import BasicExample from "./pages/basic";
+import TaskParserExample from "./pages/task-parser";
+import SuspendExample from "./pages/suspend";
+import LogContainer from "./components/LogContainer";
+import { LogProvider, useLog } from "./contexts/LogContext";
 import styles from "./App.module.css";
 
 const { Sider, Content } = Layout;
 
 function AppContent() {
   const location = useLocation();
+  const { logs, isVisible, clearLogs, toggleVisibility } = useLog();
 
   const menuItems = [
     {
@@ -67,15 +70,24 @@ function AppContent() {
           </Content>
         </Layout>
       </Layout>
+      
+      <LogContainer
+        logs={logs}
+        onClear={clearLogs}
+        isVisible={isVisible}
+        onToggle={toggleVisibility}
+      />
     </div>
   );
 }
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <LogProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </LogProvider>
   );
 }
 

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, ClearOutlined, CopyOutlined, PauseOutlined, CaretRightOutlined } from '@ant-design/icons';
-import { RTOS } from '../../lib/rtos';
-import { SchedulerConfig, TaskHandle } from '../../lib/types';
-import styles from './BasicExample.module.css';
+import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined, PauseOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { RTOS } from '../../../lib/rtos';
+import { SchedulerConfig, TaskHandle } from '../../../lib/types';
+import { useLog } from '../../contexts/LogContext';
+import styles from './index.module.css';
 
 const SuspendExample: React.FC = () => {
+  const { startCapture, stopCapture } = useLog();
+  
   // 创建独立的 RTOS 实例
   const [rtos] = useState(() => {
     const config: SchedulerConfig = {
@@ -16,15 +19,10 @@ const SuspendExample: React.FC = () => {
     };
     return new RTOS(config);
   });
-  const [output, setOutput] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
   const [taskHandle, setTaskHandle] = useState<TaskHandle | null>(null);
 
-  const log = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setOutput(prev => prev + `[${timestamp}] ${message}\n`);
-  };
 
   const updateStatus = () => {
     setStatus(rtos.getSystemStatus());
@@ -41,7 +39,7 @@ const SuspendExample: React.FC = () => {
           if (!taskInfo) {
             // 任务不存在，说明已完成或被删除
             setTaskHandle(null);
-            log('📋 任务已完成，可以创建新任务');
+            console.log('📋 任务已完成，可以创建新任务');
           }
         }
       }
@@ -53,38 +51,40 @@ const SuspendExample: React.FC = () => {
   const startSystem = () => {
     rtos.start();
     setIsRunning(true);
-    log('🚀 系统已启动');
+    startCapture(); // 开始捕获 console.log
+    console.log('🚀 系统已启动');
     updateStatus();
   };
 
   const stopSystem = () => {
     rtos.stop();
     setIsRunning(false);
-    log('⏹️ 系统已停止');
+    stopCapture(); // 停止捕获 console.log
+    console.log('⏹️ 系统已停止');
     updateStatus();
   };
 
   const createSuspendableTask = () => {
     if (!isRunning) {
-      log('❌ 请先启动系统');
+      console.log('❌ 请先启动系统');
       return;
     }
 
     if (taskHandle) {
-      log('❌ 任务已存在，请先删除或等待完成');
+      console.log('❌ 任务已存在，请先删除或等待完成');
       return;
     }
 
     const handle = rtos.createTask(
       () => {
-        log('📋 任务开始运行');
+        console.log('📋 任务开始运行');
         let count = 0;
         while (count < 10) {
           count++;
-          log(`📋 任务运行第 ${count} 次`);
+          console.log(`📋 任务运行第 ${count} 次`);
           rtos.delay(10); // 延时1秒
         }
-        log('📋 任务完成');
+        console.log('📋 任务完成');
       },
       5,
       2048,
@@ -93,7 +93,7 @@ const SuspendExample: React.FC = () => {
     );
 
     setTaskHandle(handle);
-    log(`📋 创建任务，句柄: ${handle}`);
+    console.log(`📋 创建任务，句柄: ${handle}`);
     updateStatus();
     
     // 让出 CPU 给新创建的任务执行
@@ -102,57 +102,54 @@ const SuspendExample: React.FC = () => {
 
   const suspendTask = () => {
     if (!taskHandle) {
-      log('❌ 没有可挂起的任务');
+      console.log('❌ 没有可挂起的任务');
       return;
     }
 
     const success = rtos.suspendTask(taskHandle);
     if (success) {
-      log('⏸️ 任务已挂起');
+      console.log('⏸️ 任务已挂起');
     } else {
-      log('❌ 挂起任务失败');
+      console.log('❌ 挂起任务失败');
     }
     updateStatus();
   };
 
   const resumeTask = () => {
     if (!taskHandle) {
-      log('❌ 没有可恢复的任务');
+      console.log('❌ 没有可恢复的任务');
       return;
     }
 
     const success = rtos.resumeTask(taskHandle);
     if (success) {
-      log('▶️ 任务已恢复');
+      console.log('▶️ 任务已恢复');
     } else {
-      log('❌ 恢复任务失败');
+      console.log('❌ 恢复任务失败');
     }
     updateStatus();
   };
 
   const deleteTask = () => {
     if (!taskHandle) {
-      log('❌ 没有可删除的任务');
+      console.log('❌ 没有可删除的任务');
       return;
     }
 
     const success = rtos.deleteTask(taskHandle);
     if (success) {
-      log('🗑️ 任务已删除');
+      console.log('🗑️ 任务已删除');
       setTaskHandle(null);
     } else {
-      log('❌ 删除任务失败');
+      console.log('❌ 删除任务失败');
     }
     updateStatus();
   };
 
-  const clearOutput = () => {
-    setOutput('');
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      log('📋 代码已复制到剪贴板');
+      console.log('📋 代码已复制到剪贴板');
     });
   };
 
@@ -270,12 +267,6 @@ rtos.deleteTask(taskHandle);`;
           >
             删除任务
           </Button>
-          <Button 
-            icon={<ClearOutlined />}
-            onClick={clearOutput}
-          >
-            清空输出
-          </Button>
         </Space>
       </Card>
 
@@ -300,9 +291,6 @@ rtos.deleteTask(taskHandle);`;
         />
       </Card>
 
-      <Card title="系统输出">
-        <div className={styles.output}>{output}</div>
-      </Card>
     </div>
   );
 };

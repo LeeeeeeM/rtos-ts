@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, ClearOutlined, CopyOutlined } from '@ant-design/icons';
-import { RTOS } from '../../lib/rtos';
-import { SchedulerConfig } from '../../lib/types';
-import styles from './BasicExample.module.css';
+import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined } from '@ant-design/icons';
+import { RTOS } from '../../../lib/rtos';
+import { SchedulerConfig } from '../../../lib/types';
+import { useLog } from '../../contexts/LogContext';
+import styles from './index.module.css';
 
 const BasicExample: React.FC = () => {
+  const { startCapture, stopCapture } = useLog();
+  
   // 创建独立的 RTOS 实例
   const [rtos] = useState(() => {
     const config: SchedulerConfig = {
@@ -16,14 +19,9 @@ const BasicExample: React.FC = () => {
     };
     return new RTOS(config);
   });
-  const [output, setOutput] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
 
-  const log = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setOutput(prev => prev + `[${timestamp}] ${message}\n`);
-  };
 
   const updateStatus = () => {
     setStatus(rtos.getSystemStatus());
@@ -42,34 +40,37 @@ const BasicExample: React.FC = () => {
   const startSystem = () => {
     rtos.start();
     setIsRunning(true);
-    log('🚀 系统已启动');
+    startCapture(); // 开始捕获 console.log
+    console.log('🚀 系统已启动');
     updateStatus();
   };
 
   const stopSystem = () => {
     rtos.stop();
     setIsRunning(false);
-    log('⏹️ 系统已停止');
+    stopCapture(); // 停止捕获 console.log
+    console.log('⏹️ 系统已停止');
     updateStatus();
   };
 
 
   const runBasicExample = () => {
-    log('=== 基本任务示例 ===');
+    console.log('=== 基本任务示例 ===');
     
     // 如果系统没有运行，先启动系统
     if (!isRunning) {
-      log('🚀 自动启动系统以运行任务...');
+      console.log('🚀 自动启动系统以运行任务...');
       rtos.start();
       setIsRunning(true);
+      startCapture(); // 开始捕获 console.log
     }
     
     // 创建高优先级任务
     rtos.createTask(
       () => {
-        log('🔥 高优先级任务开始运行');
+        console.log('🔥 高优先级任务开始运行');
         rtos.delay(10);
-        log('🔥 高优先级任务延时结束');
+        console.log('🔥 高优先级任务延时结束');
       },
       10,
       2048,
@@ -80,9 +81,9 @@ const BasicExample: React.FC = () => {
     // 创建中优先级任务
     rtos.createTask(
       () => {
-        log('⚡ 中优先级任务开始运行');
+        console.log('⚡ 中优先级任务开始运行');
         rtos.delay(20);
-        log('⚡ 中优先级任务延时结束');
+        console.log('⚡ 中优先级任务延时结束');
       },
       5,
       2048,
@@ -93,9 +94,9 @@ const BasicExample: React.FC = () => {
     // 创建低优先级任务
     rtos.createTask(
       () => {
-        log('🐌 低优先级任务开始运行');
+        console.log('🐌 低优先级任务开始运行');
         rtos.delay(30);
-        log('🐌 低优先级任务延时结束');
+        console.log('🐌 低优先级任务延时结束');
       },
       1,
       2048,
@@ -103,20 +104,17 @@ const BasicExample: React.FC = () => {
       'LowPriorityTask'
     );
 
-    log('📝 已创建示例任务');
+    console.log('📝 已创建示例任务');
     updateStatus();
     
     // 让出 CPU 给新创建的任务执行
     rtos.yield();
   };
 
-  const clearOutput = () => {
-    setOutput('');
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      log('📋 代码已复制到剪贴板');
+      console.log('📋 代码已复制到剪贴板');
     });
   };
 
@@ -227,12 +225,6 @@ const runBasicExample = () => {
           <Button onClick={runBasicExample}>
             运行基本示例
           </Button>
-          <Button 
-            icon={<ClearOutlined />}
-            onClick={clearOutput}
-          >
-            清空输出
-          </Button>
         </Space>
       </Card>
 
@@ -257,9 +249,6 @@ const runBasicExample = () => {
         />
       </Card>
 
-      <Card title="系统输出">
-        <div className={styles.output}>{output}</div>
-      </Card>
     </div>
   );
 };

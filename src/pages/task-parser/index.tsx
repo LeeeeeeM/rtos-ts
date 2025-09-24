@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, CodeOutlined, ClearOutlined } from '@ant-design/icons';
-import { RTOS } from '../../lib/rtos';
-import { SchedulerConfig } from '../../lib/types';
-import { RTOSParser } from '../../lib/parser';
-import styles from './BasicExample.module.css';
+import { PlayCircleOutlined, PauseCircleOutlined, CodeOutlined } from '@ant-design/icons';
+import { RTOS } from '../../../lib/rtos';
+import { SchedulerConfig } from '../../../lib/types';
+import { RTOSParser } from '../../../lib/parser';
+import { useLog } from '../../contexts/LogContext';
+import styles from './index.module.css';
 
 const { TextArea } = Input;
 
 const TaskParserExample: React.FC = () => {
+  const { startCapture, stopCapture } = useLog();
+  
   // 创建独立的 RTOS 实例
   const [rtos] = useState(() => {
     const config: SchedulerConfig = {
@@ -19,7 +22,6 @@ const TaskParserExample: React.FC = () => {
     };
     return new RTOS(config);
   });
-  const [output, setOutput] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
   const [originalCode, setOriginalCode] = useState(`
@@ -41,10 +43,6 @@ rtos.createTask(() => {
     `);
   const [transformedCode, setTransformedCode] = useState<string>('');
 
-  const log = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setOutput(prev => prev + `[${timestamp}] ${message}\n`);
-  };
 
   const updateStatus = () => {
     setStatus(rtos.getSystemStatus());
@@ -63,14 +61,16 @@ rtos.createTask(() => {
   const startSystem = () => {
     rtos.start();
     setIsRunning(true);
-    log('🚀 系统已启动');
+    startCapture(); // 开始捕获 console.log
+    console.log('🚀 系统已启动');
     updateStatus();
   };
 
   const stopSystem = () => {
     rtos.stop();
     setIsRunning(false);
-    log('⏹️ 系统已停止');
+    stopCapture(); // 停止捕获 console.log
+    console.log('⏹️ 系统已停止');
     updateStatus();
   };
 
@@ -79,56 +79,54 @@ rtos.createTask(() => {
           // 创建解析器
           const parser = new RTOSParser();
       
-      log('🔄 开始转换代码...');
+      console.log('🔄 开始转换代码...');
       
       // 解析并转换代码
       const transformed = parser.parseAndTransformToGenerator(originalCode);
       setTransformedCode(transformed);
       
-      log('✅ 代码转换完成');
-      log('📝 转换后的代码已显示在下方');
+      console.log('✅ 代码转换完成');
+      console.log('📝 转换后的代码已显示在下方');
       
     } catch (error) {
-      log(`❌ 转换出错: ${error}`);
+      console.log(`❌ 转换出错: ${error}`);
     }
   };
 
   const runTaskParserExample = () => {
-    log('=== 任务解析器示例 ===');
+    console.log('=== 任务解析器示例 ===');
     
     // 如果系统没有运行，先启动系统
     if (!isRunning) {
-      log('🚀 自动启动系统以运行任务...');
+      console.log('🚀 自动启动系统以运行任务...');
       rtos.start();
       setIsRunning(true);
+      startCapture(); // 开始捕获 console.log
     }
     
     try {
-      log('📝 执行原始代码中的任务...');
+      console.log('📝 执行原始代码中的任务...');
       
       // 创建一个安全的执行环境
-      const executeCode = new Function('rtos', 'log', `
+      const executeCode = new Function('rtos', 'console', `
         ${originalCode}
       `);
       
       // 执行原始代码
-      executeCode(rtos, log);
+      executeCode(rtos, console);
       
-      log('✅ 原始代码执行完成，解析器会自动转换 delay() 为 yield');
+      console.log('✅ 原始代码执行完成，解析器会自动转换 delay() 为 yield');
       
       // 检查任务状态
       const status = rtos.getSystemStatus();
-      log(`📊 当前状态: 总任务=${status.totalTasks}, 就绪=${status.readyTasks}, 阻塞=${status.blockedTasks}`);
+      console.log(`📊 当前状态: 总任务=${status.totalTasks}, 就绪=${status.readyTasks}, 阻塞=${status.blockedTasks}`);
     } catch (error) {
-      log(`❌ 执行原始代码出错: ${error}`);
+      console.log(`❌ 执行原始代码出错: ${error}`);
     }
     
     updateStatus();
   };
 
-  const clearOutput = () => {
-    setOutput('');
-  };
 
   return (
     <div className={styles.container}>
@@ -228,18 +226,9 @@ rtos.createTask(() => {
           >
             运行任务解析示例
           </Button>
-          <Button 
-            icon={<ClearOutlined />}
-            onClick={clearOutput}
-          >
-            清空输出
-          </Button>
         </Space>
       </Card>
 
-      <Card title="系统输出">
-        <div className={styles.output}>{output}</div>
-      </Card>
     </div>
   );
 };
