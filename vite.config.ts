@@ -32,8 +32,16 @@ export default defineConfig(({ mode }) => {
       minify: false
     } : {
       outDir: 'dist',
-      sourcemap: true,
-      minify: 'terser'
+      sourcemap: false, // 禁用 sourcemap 提升构建速度
+      minify: 'esbuild', // 使用更快的 esbuild
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            router: ['react-router-dom']
+          }
+        }
+      }
     },
     resolve: {
       alias: {
