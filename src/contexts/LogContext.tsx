@@ -26,6 +26,14 @@ export const LogProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  
+  // 保存原始的 console 方法
+  const originalConsole = React.useRef({
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+    info: console.info
+  });
 
   const addLog = useCallback((message: string, type: 'log' | 'warn' | 'error' | 'info' = 'log') => {
     const timestamp = new Date().toLocaleTimeString();
@@ -52,19 +60,13 @@ export const LogProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setIsCapturing(true);
     
-    // 保存原始的 console 方法
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
-    const originalInfo = console.info;
-
     // 重写 console.log
     console.log = (...args: any[]) => {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
       ).join(' ');
       addLog(message, 'log');
-      originalLog.apply(console, args);
+      originalConsole.current.log.apply(console, args);
     };
 
     // 重写 console.warn
@@ -73,7 +75,7 @@ export const LogProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
       ).join(' ');
       addLog(message, 'warn');
-      originalWarn.apply(console, args);
+      originalConsole.current.warn.apply(console, args);
     };
 
     // 重写 console.error
@@ -82,7 +84,7 @@ export const LogProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
       ).join(' ');
       addLog(message, 'error');
-      originalError.apply(console, args);
+      originalConsole.current.error.apply(console, args);
     };
 
     // 重写 console.info
@@ -91,22 +93,21 @@ export const LogProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
       ).join(' ');
       addLog(message, 'info');
-      originalInfo.apply(console, args);
-    };
-
-    // 返回恢复函数
-    return () => {
-      console.log = originalLog;
-      console.warn = originalWarn;
-      console.error = originalError;
-      console.info = originalInfo;
-      setIsCapturing(false);
+      originalConsole.current.info.apply(console, args);
     };
   }, [isCapturing, addLog]);
 
   const stopCapture = useCallback(() => {
+    if (!isCapturing) return;
+    
     setIsCapturing(false);
-  }, []);
+    
+    // 恢复原始的 console 方法
+    console.log = originalConsole.current.log;
+    console.warn = originalConsole.current.warn;
+    console.error = originalConsole.current.error;
+    console.info = originalConsole.current.info;
+  }, [isCapturing]);
 
   const value: LogContextType = {
     logs,

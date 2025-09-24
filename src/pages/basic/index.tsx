@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
 import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import { RTOS } from '../../../lib/rtos';
@@ -21,6 +21,7 @@ const BasicExample: React.FC = () => {
   });
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
+  const isRunningRef = useRef(false);
 
 
   const updateStatus = () => {
@@ -37,9 +38,20 @@ const BasicExample: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRunning]);
 
+  // 组件卸载时清理资源
+  useEffect(() => {
+    return () => {
+      if (isRunningRef.current) {
+        rtos.stop();
+        stopCapture();
+      }
+    };
+  }, []);
+
   const startSystem = () => {
     rtos.start();
     setIsRunning(true);
+    isRunningRef.current = true;
     startCapture(); // 开始捕获 console.log
     console.log('🚀 系统已启动');
     updateStatus();
@@ -48,6 +60,7 @@ const BasicExample: React.FC = () => {
   const stopSystem = () => {
     rtos.stop();
     setIsRunning(false);
+    isRunningRef.current = false;
     stopCapture(); // 停止捕获 console.log
     console.log('⏹️ 系统已停止');
     updateStatus();
@@ -58,10 +71,11 @@ const BasicExample: React.FC = () => {
     console.log('=== 基本任务示例 ===');
     
     // 如果系统没有运行，先启动系统
-    if (!isRunning) {
+    if (!isRunningRef.current) {
       console.log('🚀 自动启动系统以运行任务...');
       rtos.start();
       setIsRunning(true);
+      isRunningRef.current = true;
       startCapture(); // 开始捕获 console.log
     }
     

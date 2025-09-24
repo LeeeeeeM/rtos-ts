@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
 import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined, PauseOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { RTOS } from '../../../lib/rtos';
@@ -22,6 +22,7 @@ const SuspendExample: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
   const [taskHandle, setTaskHandle] = useState<TaskHandle | null>(null);
+  const isRunningRef = useRef(false);
 
 
   const updateStatus = () => {
@@ -48,9 +49,20 @@ const SuspendExample: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRunning, taskHandle]);
 
+  // 组件卸载时清理资源
+  useEffect(() => {
+    return () => {
+      if (isRunningRef.current) {
+        rtos.stop();
+        stopCapture();
+      }
+    };
+  }, []);
+
   const startSystem = () => {
     rtos.start();
     setIsRunning(true);
+    isRunningRef.current = true;
     startCapture(); // 开始捕获 console.log
     console.log('🚀 系统已启动');
     updateStatus();
@@ -59,13 +71,14 @@ const SuspendExample: React.FC = () => {
   const stopSystem = () => {
     rtos.stop();
     setIsRunning(false);
+    isRunningRef.current = false;
     stopCapture(); // 停止捕获 console.log
     console.log('⏹️ 系统已停止');
     updateStatus();
   };
 
   const createSuspendableTask = () => {
-    if (!isRunning) {
+    if (!isRunningRef.current) {
       console.log('❌ 请先启动系统');
       return;
     }
