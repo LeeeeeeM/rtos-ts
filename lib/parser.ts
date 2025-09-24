@@ -15,31 +15,43 @@ export class RTOSParser {
    * 转换任务函数 - 将普通函数转换为 Generator
    */
   transformTaskFunction(taskFunction: Function): Function {
-    // 获取函数的字符串表示
-    const funcString = taskFunction.toString();
-    
-    // 解析并转换函数为 Generator
-    const transformedCode = this.parseAndTransformToGenerator(funcString);
-    
-    // 提取函数体，去掉外层的包装
-    const functionBody = this.extractFunctionBody(transformedCode);
-    
-    // 直接返回转换后的 Generator 函数
-    return new Function('rtos', 'console', 'log', `
-      try {
-        return function*() {
-          try {
-            ${functionBody}
-          } catch (error) {
-            console.error('Generator 函数体执行出错:', error);
-            throw error;
-          }
-        };
-      } catch (error) {
-        console.error('Generator 函数创建出错:', error);
-        throw error;
+    try {
+      // 获取函数的字符串表示
+      const funcString = taskFunction.toString();
+      
+      // 检查是否包含 delay 调用
+      if (!funcString.includes('rtos.delay') && !funcString.includes('delay(')) {
+        // 如果没有 delay 调用，直接返回原函数
+        return taskFunction;
       }
-    `);
+      
+      // 解析并转换函数为 Generator
+      const transformedCode = this.parseAndTransformToGenerator(funcString);
+      
+      // 提取函数体，去掉外层的包装
+      const functionBody = this.extractFunctionBody(transformedCode);
+      
+      // 直接返回转换后的 Generator 函数
+      return new Function('rtos', 'console', 'log', `
+        try {
+          return function*() {
+            try {
+              ${functionBody}
+            } catch (error) {
+              console.error('Generator 函数体执行出错:', error);
+              throw error;
+            }
+          };
+        } catch (error) {
+          console.error('Generator 函数创建出错:', error);
+          throw error;
+        }
+      `);
+    } catch (error) {
+      console.error('转换任务函数时出错:', error);
+      // 如果转换失败，返回原函数
+      return taskFunction;
+    }
   }
 
   /**

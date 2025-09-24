@@ -33,7 +33,17 @@ export default defineConfig(({ mode }) => {
     } : {
       outDir: 'dist',
       sourcemap: false, // 禁用 sourcemap 提升构建速度
-      minify: 'esbuild', // 使用更快的 esbuild
+      minify: 'terser', // 使用 terser 而不是 esbuild
+      terserOptions: {
+        compress: {
+          keep_fnames: true, // 保持函数名
+          keep_classnames: true, // 保持类名
+        },
+        mangle: {
+          keep_fnames: true, // 保持函数名不被混淆
+          keep_classnames: true, // 保持类名不被混淆
+        }
+      },
       rollupOptions: {
         output: {
           manualChunks: {

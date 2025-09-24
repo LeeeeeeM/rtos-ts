@@ -26,12 +26,18 @@ export class TaskManager {
     
     // 检查是否为 Generator 函数
     const isGenerator = taskFunction.constructor.name === 'GeneratorFunction' || 
-                       taskFunction.toString().includes('function*');
+                       taskFunction.toString().includes('function*') ||
+                       taskFunction.toString().includes('function *');
     let generator: Generator<any, any, any> | undefined;
     
     
     if (isGenerator) {
-      generator = taskFunction() as Generator<any, any, any>;
+      try {
+        generator = taskFunction() as Generator<any, any, any>;
+      } catch (error) {
+        console.error('创建 Generator 时出错:', error);
+        // 如果创建 Generator 失败，将其视为普通函数
+      }
     }
 
     const tcb: TaskControlBlock = {
