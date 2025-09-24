@@ -1,16 +1,17 @@
 # TypeScript 实时操作系统 (RTOS)
 
-一个用 TypeScript 实现的类似 FreeRTOS 的实时操作系统，支持任务调度、同步机制、定时器等功能。
+一个用 TypeScript 实现的类似 FreeRTOS 的实时操作系统，支持任务调度、优先级管理、任务挂起恢复等功能。
 
 ## 特性
 
 - ✅ **任务管理**: 支持任务的创建、删除、挂起、恢复
 - ✅ **任务状态**: 就绪态、运行态、阻塞态、挂起态
 - ✅ **优先级调度**: 基于优先级的抢占式调度
-- ✅ **同步机制**: 信号量、互斥锁、队列
-- ✅ **定时器**: 单次和周期性定时器
 - ✅ **延时功能**: 基于时钟节拍的精确延时
+- ✅ **任务解析器**: 自动将普通函数转换为 Generator 函数
+- ✅ **状态监控**: 实时监控系统状态和任务信息
 - ✅ **类型安全**: 完整的 TypeScript 类型定义
+- ✅ **Web 演示**: 基于 React 的交互式演示界面
 
 ## 安装
 
@@ -37,27 +38,6 @@ npm run build:lib
 npm run build
 ```
 
-## 运行示例
-
-```bash
-# 在浏览器中查看交互式演示
-npm run dev
-# 访问 http://localhost:3000 查看完整的 React 演示应用
-```
-
-## 测试
-
-```bash
-# 运行测试
-npm run test
-
-# 运行测试并生成覆盖率报告
-npm run test:run
-
-# 打开测试UI界面
-npm run test:ui
-```
-
 ## 快速开始
 
 ```typescript
@@ -66,7 +46,7 @@ import { RTOS, SchedulerConfig } from './lib/rtos';
 // 配置调度器
 const config: SchedulerConfig = {
   maxTasks: 10,
-  tickRate: 1000, // 1000 Hz
+  tickRate: 10, // 10 Hz
   stackSize: 4096,
   idleTaskStackSize: 1024
 };
@@ -75,25 +55,36 @@ const config: SchedulerConfig = {
 const rtos = new RTOS(config);
 
 // 创建任务
-const task1 = rtos.createTask(
-  'Task1',
+const taskHandle = rtos.createTask(
   () => {
-    console.log('Task1 运行');
-    rtos.delayMs(1000); // 延时1秒
+    console.log('任务开始运行');
+    rtos.delay(10); // 延时1秒
+    console.log('任务完成');
   },
   5, // 优先级
-  2048 // 栈大小
+  2048, // 栈大小
+  undefined, // 参数
+  'MyTask' // 任务名称
 );
 
 // 启动调度器
 rtos.start();
+
+// 挂起任务
+rtos.suspendTask(taskHandle);
+
+// 恢复任务
+rtos.resumeTask(taskHandle);
+
+// 删除任务
+rtos.deleteTask(taskHandle);
 ```
 
 ## 任务状态
 
 - **就绪态 (READY)**: 任务准备运行，等待调度器分配CPU
 - **运行态 (RUNNING)**: 任务正在执行
-- **阻塞态 (BLOCKED)**: 任务等待某个事件（如信号量、延时等）
+- **阻塞态 (BLOCKED)**: 任务等待延时或其他事件
 - **挂起态 (SUSPENDED)**: 任务被手动挂起，不会参与调度
 
 ## API 参考
@@ -102,7 +93,7 @@ rtos.start();
 
 ```typescript
 // 创建任务
-createTask(name: string, taskFunction: () => void, priority: number, stackSize?: number, params?: any): TaskHandle
+createTask(taskFunction: () => void, priority: number, stackSize?: number, params?: any, name?: string): TaskHandle
 
 // 删除任务
 deleteTask(handle: TaskHandle): boolean
@@ -117,67 +108,43 @@ resumeTask(handle: TaskHandle): boolean
 setTaskPriority(handle: TaskHandle, priority: number): boolean
 
 // 任务延时
-delay(ticks: number): void
-delayMs(ms: number): void
+delay(ticks: number): { delayTicks: number }
+delayMs(ms: number): { delayTicks: number }
 
 // 任务让出CPU
 yield(): void
 ```
 
-### 信号量
+### 系统状态
 
 ```typescript
-// 创建信号量
-createSemaphore(name: string, initialCount?: number, maxCount?: number): boolean
+// 获取系统状态
+getSystemStatus(): SystemStatus
 
-// 获取信号量
-takeSemaphore(name: string, timeout?: number): boolean
+// 获取任务信息
+getTaskInfo(handle: TaskHandle): TaskControlBlock | null
 
-// 释放信号量
-giveSemaphore(name: string): boolean
+// 获取所有任务
+getAllTasks(): TaskControlBlock[]
+
+// 获取时钟节拍数
+getTickCount(): number
 ```
 
-### 互斥锁
+### 状态变化监听
 
 ```typescript
-// 创建互斥锁
-createMutex(name: string): boolean
-
-// 获取互斥锁
-takeMutex(name: string, timeout?: number): boolean
-
-// 释放互斥锁
-giveMutex(name: string): boolean
+// 监听状态变化
+onStateChange(callback: (status: SystemStatus) => void): () => void
 ```
 
-### 队列
+## 演示页面
 
-```typescript
-// 创建队列
-createQueue<T>(name: string, maxSize: number): boolean
+访问 http://localhost:3000 查看交互式演示：
 
-// 发送数据
-sendToQueue<T>(name: string, data: T, timeout?: number): boolean
-
-// 接收数据
-receiveFromQueue<T>(name: string, timeout?: number): T | null
-```
-
-### 定时器
-
-```typescript
-// 创建定时器
-createTimer(period: number, callback: () => void, isAutoReload?: boolean): number
-
-// 启动定时器
-startTimer(id: number): boolean
-
-// 停止定时器
-stopTimer(id: number): boolean
-
-// 删除定时器
-deleteTimer(id: number): boolean
-```
+1. **基本任务调度** (`/basic`): 演示任务创建、优先级调度和延时功能
+2. **任务挂起** (`/suspend`): 演示任务的挂起、恢复和删除功能
+3. **任务解析器** (`/task-parser`): 演示任务解析和状态监控功能
 
 ## 项目结构
 
@@ -187,22 +154,16 @@ scheduler-ts/
 │   ├── types.ts          # 类型定义
 │   ├── task.ts           # 任务管理
 │   ├── scheduler.ts      # 调度器核心
-│   ├── sync.ts           # 同步机制
-│   ├── timer.ts          # 定时器
+│   ├── parser.ts         # 任务解析器
 │   └── rtos.ts           # 主入口
 ├── src/                  # React 应用代码
 │   ├── components/       # React 组件
-│   │   ├── BasicExample.tsx
-│   │   ├── SemaphoreExample.tsx
-│   │   ├── MutexExample.tsx
-│   │   ├── QueueExample.tsx
-│   │   ├── TimerExample.tsx
-│   │   ├── MonitorExample.tsx
-│   │   └── YieldExample.tsx
+│   │   ├── BasicExample.tsx      # 基本任务调度演示
+│   │   ├── SuspendExample.tsx    # 任务挂起演示
+│   │   └── TaskParserExample.tsx # 任务解析器演示
 │   ├── App.tsx           # 主应用组件
 │   ├── App.module.css    # 样式文件
 │   └── main.tsx          # 应用入口
-├── tests/                # 测试文件
 ├── index.html            # HTML 入口
 ├── dist/                 # 编译输出
 └── README.md
@@ -217,12 +178,10 @@ npm run dev
 # 构建项目
 npm run build              # 构建演示应用
 npm run build:lib          # 构建库文件
-npm run build:types        # 生成类型定义文件
 
 # 运行测试
 npm run test               # 运行测试（监听模式）
 npm run test:run           # 运行测试（单次）
-npm run test:ui            # 打开测试UI界面
 npm run test:coverage      # 生成覆盖率报告
 
 # 代码质量
@@ -232,8 +191,24 @@ npm run type-check         # 类型检查
 
 # 其他
 npm run preview            # 预览构建结果
-npm run clean              # 清理构建文件
 ```
+
+## 技术特点
+
+### 任务解析器
+- 自动将普通 JavaScript 函数转换为 Generator 函数
+- 支持 `rtos.delay()` 调用的自动转换
+- 保持代码的可读性和易用性
+
+### 优先级调度
+- 基于优先级的抢占式调度
+- 高优先级任务优先执行
+- 支持任务优先级动态调整
+
+### 状态监控
+- 实时监控系统状态
+- 支持状态变化回调
+- 提供详细的任务信息
 
 ## 许可证
 

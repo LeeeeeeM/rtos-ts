@@ -24,7 +24,7 @@ const TaskParserExample: React.FC = () => {
   const [status, setStatus] = useState(rtos.getSystemStatus());
   const [originalCode, setOriginalCode] = useState(`
     rtos.createTask(() => {
-    console.log("start1");
+    console.log("start 1");
     while (1) {
         rtos.delay(20);
         console.log("task 1");
@@ -37,7 +37,7 @@ rtos.createTask(() => {
         rtos.delay(30);
         console.log("task 2");
     }
-}, 3);
+}, 13);
     `);
   const [transformedCode, setTransformedCode] = useState<string>('');
 

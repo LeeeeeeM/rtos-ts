@@ -11,7 +11,7 @@ export class Scheduler {
   private tickCount: number = 0;
   private tickInterval: any = null;
   private idleTaskHandle: TaskHandle | null = null;
-  private currentTaskIndex: number = 0; // 当前任务索引，用于轮转调度
+  // 移除 currentTaskIndex，现在使用优先级调度
 
   constructor(config: SchedulerConfig) {
     this.config = config;
@@ -102,12 +102,11 @@ export class Scheduler {
       return;
     }
 
-    // 轮转调度：选择下一个任务
-    const nextTask = readyTasks[this.currentTaskIndex % readyTasks.length];
-    if (nextTask === undefined) {
+    // 优先级调度：选择优先级最高的任务
+    const nextTask = this.taskManager.getNextTask();
+    if (!nextTask) {
       return;
     }
-    this.currentTaskIndex = (this.currentTaskIndex + 1) % readyTasks.length;
 
     const currentTask = this.taskManager.getCurrentTask();
     

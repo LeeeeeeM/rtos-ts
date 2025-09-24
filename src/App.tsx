@@ -9,12 +9,12 @@ import {
 import { Layout, Menu } from "antd";
 import {
   PlayCircleOutlined,
-  MonitorOutlined,
   FunctionOutlined,
+  PauseOutlined,
 } from "@ant-design/icons";
 import BasicExample from "./components/BasicExample";
-import MonitorExample from "./components/MonitorExample";
 import TaskParserExample from "./components/TaskParserExample";
+import SuspendExample from "./components/SuspendExample";
 import styles from "./App.module.css";
 
 const { Sider, Content } = Layout;
@@ -29,9 +29,9 @@ function AppContent() {
       label: <Link to="/basic">基本任务调度</Link>,
     },
     {
-      key: "/monitor",
-      icon: <MonitorOutlined />,
-      label: <Link to="/monitor">状态监控</Link>,
+      key: "/suspend",
+      icon: <PauseOutlined />,
+      label: <Link to="/suspend">任务挂起</Link>,
     },
     {
       key: "/task-parser",
@@ -61,7 +61,7 @@ function AppContent() {
             <Routes>
               <Route path="/" element={<Navigate to="/basic" replace />} />
               <Route path="/basic" element={<BasicExample />} />
-              <Route path="/monitor" element={<MonitorExample />} />
+              <Route path="/suspend" element={<SuspendExample />} />
               <Route path="/task-parser" element={<TaskParserExample />} />
             </Routes>
           </Content>
