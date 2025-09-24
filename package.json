@@ -1,0 +1,71 @@
+{
+  "name": "scheduler-ts",
+  "version": "1.0.0",
+  "description": "A TypeScript implementation of a real-time operating system similar to FreeRTOS",
+  "type": "module",
+  "main": "dist/rtos.js",
+  "types": "dist/rtos.d.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:lib": "vite build --mode library",
+    "build:types": "tsc --emitDeclarationOnly",
+    "preview": "vite preview",
+    "start": "npm run dev",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint lib/**/*.ts src/**/*.ts src/**/*.tsx",
+    "lint:fix": "eslint lib/**/*.ts src/**/*.ts src/**/*.tsx --fix",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "rtos",
+    "freertos",
+    "scheduler",
+    "typescript",
+    "real-time",
+    "operating-system",
+    "embedded"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.9.2",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.0.2",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^5.0.3",
+    "antd": "^5.27.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.28.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/scheduler-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/scheduler-ts/issues"
+  },
+  "homepage": "https://github.com/yourusername/scheduler-ts#readme"
+}
