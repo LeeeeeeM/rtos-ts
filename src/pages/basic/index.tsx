@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined, CodeOutlined } from '@ant-design/icons';
 import { RTOS } from '../../../lib/rtos';
 import { SchedulerConfig } from '../../../lib/types';
 import { useLog } from '../../contexts/LogContext';
 import styles from './index.module.css';
+
+const { TextArea } = Input;
 
 const BasicExample: React.FC = () => {
   const { startCapture, stopCapture } = useLog();
@@ -22,6 +24,46 @@ const BasicExample: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
   const isRunningRef = useRef(false);
+  
+  // 三个独立的任务代码块
+  const [highPriorityCode, setHighPriorityCode] = useState(`// 创建高优先级任务
+rtos.createTask(
+  () => {
+    console.log('🔥 高优先级任务运行');
+    rtos.delay(10); // 延时1秒
+    console.log('🔥 高优先级任务运行完成');
+  },
+  10, // 优先级
+  2048, // 栈大小
+  undefined, // 参数
+  'HighPriorityTask' // 任务名称
+);`);
+
+  const [mediumPriorityCode, setMediumPriorityCode] = useState(`// 创建中优先级任务
+rtos.createTask(
+  () => {
+    console.log('⚡ 中优先级任务运行');
+    rtos.delay(20); // 延时2秒
+    console.log('⚡ 中优先级任务运行完成');
+  },
+  5, // 优先级
+  2048, // 栈大小
+  undefined, // 参数
+  'MediumPriorityTask' // 任务名称
+);`);
+
+  const [lowPriorityCode, setLowPriorityCode] = useState(`// 创建低优先级任务
+rtos.createTask(
+  () => {
+    console.log('🐌 低优先级任务运行');
+    rtos.delay(30); // 延时3秒
+    console.log('🐌 低优先级任务运行完成');
+  },
+  1, // 优先级
+  2048, // 栈大小
+  undefined, // 参数
+  'LowPriorityTask' // 任务名称
+);`);
 
 
   const updateStatus = () => {
@@ -79,50 +121,32 @@ const BasicExample: React.FC = () => {
       startCapture(); // 开始捕获 console.log
     }
     
-    // 创建高优先级任务
-    rtos.createTask(
-      () => {
-        console.log('🔥 高优先级任务开始运行');
-        rtos.delay(10);
-        console.log('🔥 高优先级任务延时结束');
-      },
-      10,
-      2048,
-      undefined,
-      'HighPriorityTask'
-    );
+    try {
+      const executeHighPriority = new Function('rtos', 'console', 'log', `
+        ${highPriorityCode}
+      `);
+      const log = (message: string) => {
+        console.log(`[Task] ${message}`);
+      };
+      executeHighPriority(rtos, console, log);
 
-    // 创建中优先级任务
-    rtos.createTask(
-      () => {
-        console.log('⚡ 中优先级任务开始运行');
-        rtos.delay(20);
-        console.log('⚡ 中优先级任务延时结束');
-      },
-      5,
-      2048,
-      undefined,
-      'MediumPriorityTask'
-    );
+      const executeMediumPriority = new Function('rtos', 'console', 'log', `
+        ${mediumPriorityCode}
+      `);
+      executeMediumPriority(rtos, console, log);
 
-    // 创建低优先级任务
-    rtos.createTask(
-      () => {
-        console.log('🐌 低优先级任务开始运行');
-        rtos.delay(30);
-        console.log('🐌 低优先级任务延时结束');
-      },
-      1,
-      2048,
-      undefined,
-      'LowPriorityTask'
-    );
+      const executeLowPriority = new Function('rtos', 'console', 'log', `
+        ${lowPriorityCode}
+      `);
+      executeLowPriority(rtos, console, log);
 
-    console.log('📝 已创建示例任务');
-    updateStatus();
-    
-    // 让出 CPU 给新创建的任务执行
-    rtos.yield();
+      updateStatus();
+      
+      // 让出 CPU 给新创建的任务执行
+      rtos.yield();
+    } catch (error) {
+      console.log(`❌ 创建任务时出错: ${error}`);
+    }
   };
 
 
@@ -132,52 +156,6 @@ const BasicExample: React.FC = () => {
     });
   };
 
-  const basicExampleCode = `// 运行基本示例
-const runBasicExample = () => {
-  // 如果系统没有运行，先启动系统
-  if (!rtos.isRunning()) {
-    rtos.start();
-  }
-  
-  // 创建高优先级任务
-  rtos.createTask(
-    () => {
-      console.log('🔥 高优先级任务运行');
-      rtos.delay(10); // 延时1秒
-    },
-    10, // 优先级
-    2048, // 栈大小
-    undefined, // 参数
-    'HighPriorityTask' // 任务名称
-  );
-
-  // 创建中优先级任务
-  rtos.createTask(
-    () => {
-      console.log('⚡ 中优先级任务运行');
-      rtos.delay(20); // 延时2秒
-    },
-    5, // 优先级
-    2048, // 栈大小
-    undefined, // 参数
-    'MediumPriorityTask' // 任务名称
-  );
-
-  // 创建低优先级任务
-  rtos.createTask(
-    () => {
-      console.log('🐌 低优先级任务运行');
-      rtos.delay(30); // 延时3秒
-    },
-    1, // 优先级
-    2048, // 栈大小
-    undefined, // 参数
-    'LowPriorityTask' // 任务名称
-  );
-  
-  // 让出 CPU 给新创建的任务执行
-  rtos.yield();
-};`;
 
 
   return (
@@ -236,32 +214,84 @@ const runBasicExample = () => {
           >
             停止系统
           </Button>
-          <Button onClick={runBasicExample}>
-            运行基本示例
+          <Button 
+            type="primary"
+            icon={<CodeOutlined />}
+            onClick={runBasicExample}
+          >
+            运行所有任务
           </Button>
         </Space>
       </Card>
 
-      <Card 
-        title="运行基本示例代码" 
-        extra={
-          <Button 
-            size="small" 
-            icon={<CopyOutlined />}
-            onClick={() => copyToClipboard(basicExampleCode)}
-          >
-            复制
-          </Button>
-        }
-        style={{ marginBottom: 24 }}
-      >
-        <Input.TextArea
-          value={basicExampleCode}
-          readOnly
-          autoSize={{ minRows: 15, maxRows: 20 }}
-          style={{ fontFamily: 'Monaco, Consolas, "Courier New", monospace', fontSize: '12px' }}
-        />
-      </Card>
+      <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 24 }}>
+        <Card 
+          title="🔥 高优先级任务 (优先级: 10)" 
+          size="small"
+          extra={
+            <Button 
+              size="small" 
+              icon={<CopyOutlined />}
+              onClick={() => copyToClipboard(highPriorityCode)}
+            >
+              复制
+            </Button>
+          }
+        >
+          <TextArea
+            value={highPriorityCode}
+            onChange={(e) => setHighPriorityCode(e.target.value)}
+            placeholder="输入完整的 rtos.createTask 调用代码..."
+            rows={6}
+            style={{ fontFamily: 'Monaco, Consolas, "Courier New", monospace', fontSize: '12px' }}
+          />
+        </Card>
+
+        <Card 
+          title="⚡ 中优先级任务 (优先级: 5)" 
+          size="small"
+          extra={
+            <Button 
+              size="small" 
+              icon={<CopyOutlined />}
+              onClick={() => copyToClipboard(mediumPriorityCode)}
+            >
+              复制
+            </Button>
+          }
+        >
+          <TextArea
+            value={mediumPriorityCode}
+            onChange={(e) => setMediumPriorityCode(e.target.value)}
+            placeholder="输入完整的 rtos.createTask 调用代码..."
+            rows={6}
+            style={{ fontFamily: 'Monaco, Consolas, "Courier New", monospace', fontSize: '12px' }}
+          />
+        </Card>
+
+        <Card 
+          title="🐌 低优先级任务 (优先级: 1)" 
+          size="small"
+          extra={
+            <Button 
+              size="small" 
+              icon={<CopyOutlined />}
+              onClick={() => copyToClipboard(lowPriorityCode)}
+            >
+              复制
+            </Button>
+          }
+        >
+          <TextArea
+            value={lowPriorityCode}
+            onChange={(e) => setLowPriorityCode(e.target.value)}
+            placeholder="输入完整的 rtos.createTask 调用代码..."
+            rows={6}
+            style={{ fontFamily: 'Monaco, Consolas, "Courier New", monospace', fontSize: '12px' }}
+          />
+        </Card>
+      </Space>
+
 
     </div>
   );
