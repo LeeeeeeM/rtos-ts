@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined, PauseOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, PauseCircleOutlined, CopyOutlined, PauseOutlined, CaretRightOutlined, CodeOutlined } from '@ant-design/icons';
 import { RTOS } from '../../../lib/rtos';
 import { SchedulerConfig, TaskHandle } from '../../../lib/types';
 import { useLog } from '../../contexts/LogContext';
 import styles from './index.module.css';
+
+const { TextArea } = Input;
 
 const SuspendExample: React.FC = () => {
   const { startCapture, stopCapture } = useLog();
@@ -23,6 +25,26 @@ const SuspendExample: React.FC = () => {
   const [status, setStatus] = useState(rtos.getSystemStatus());
   const [taskHandle, setTaskHandle] = useState<TaskHandle | null>(null);
   const isRunningRef = useRef(false);
+  
+  // 任务代码编辑
+  const [taskCode, setTaskCode] = useState(`const taskHandle = rtos.createTask(
+  () => {
+    console.log('任务开始运行');
+    let count = 0;
+    while (count < 10) {
+      count++;
+      console.log(\`任务运行第 \${count} 次\`);
+      rtos.delay(10); // 延时1秒
+    }
+    console.log('任务完成');
+  },
+  5, // 优先级
+  2048, // 栈大小
+  undefined, // 参数
+  'SuspendableTask' // 任务名称
+);
+
+return taskHandle;`);
 
 
   const updateStatus = () => {
@@ -88,29 +110,40 @@ const SuspendExample: React.FC = () => {
       return;
     }
 
-    const handle = rtos.createTask(
-      () => {
-        console.log('📋 任务开始运行');
-        let count = 0;
-        while (count < 10) {
-          count++;
-          console.log(`📋 任务运行第 ${count} 次`);
-          rtos.delay(10); // 延时1秒
-        }
-        console.log('📋 任务完成');
-      },
-      5,
-      2048,
-      undefined,
-      'SuspendableTask'
-    );
-
-    setTaskHandle(handle);
-    console.log(`📋 创建任务，句柄: ${handle}`);
-    updateStatus();
-    
-    // 让出 CPU 给新创建的任务执行
-    rtos.yield();
+    try {
+      console.log('📝 执行任务代码...');
+      
+      // 创建一个安全的执行环境，支持任务创建和句柄获取
+      const executeCode = new Function('rtos', 'console', 'log', `
+        ${taskCode}
+      `);
+      
+      // 创建 log 函数
+      const log = (message: string) => {
+        console.log(`[Task] ${message}`);
+      };
+      
+      // 执行任务代码
+      const result = executeCode(rtos, console, log);
+      
+      // 如果代码返回了句柄，使用它
+      if (result && typeof result === 'number') {
+        setTaskHandle(result);
+        console.log(`📋 创建任务，句柄: ${result}`);
+      } else {
+        // 如果没有返回句柄，尝试从代码中提取
+        // 这里我们需要修改代码，让用户明确返回句柄
+        console.log('❌ 任务创建失败，请确保代码返回任务句柄');
+        console.log('💡 提示：请在代码末尾添加 "return taskHandle;" 或直接返回 rtos.createTask 的结果');
+      }
+      
+      updateStatus();
+      
+      // 让出 CPU 给新创建的任务执行
+      rtos.yield();
+    } catch (error) {
+      console.log(`❌ 执行任务代码出错: ${error}`);
+    }
   };
 
   const suspendTask = () => {
@@ -166,35 +199,6 @@ const SuspendExample: React.FC = () => {
     });
   };
 
-  const suspendExampleCode = `// 挂起任务示例
-const rtos = new RTOS(config);
-
-// 创建任务
-const taskHandle = rtos.createTask(
-  () => {
-    console.log('任务开始运行');
-    let count = 0;
-    while (count < 10) {
-      count++;
-      console.log(\`任务运行第 \${count} 次\`);
-      rtos.delay(10); // 延时1秒
-    }
-    console.log('任务完成');
-  },
-  5, // 优先级
-  2048, // 栈大小
-  undefined, // 参数
-  'SuspendableTask' // 任务名称
-);
-
-// 挂起任务
-rtos.suspendTask(taskHandle);
-
-// 恢复任务
-rtos.resumeTask(taskHandle);
-
-// 删除任务
-rtos.deleteTask(taskHandle);`;
 
   return (
     <div className={styles.container}>
@@ -253,11 +257,12 @@ rtos.deleteTask(taskHandle);`;
             停止系统
           </Button>
           <Button 
-            icon={<PlayCircleOutlined />}
+            type="primary"
+            icon={<CodeOutlined />}
             onClick={createSuspendableTask}
             disabled={!isRunning || !!taskHandle}
           >
-            创建任务
+            运行任务代码
           </Button>
           <Button 
             icon={<PauseOutlined />}
@@ -284,25 +289,28 @@ rtos.deleteTask(taskHandle);`;
       </Card>
 
       <Card 
-        title="挂起任务代码示例" 
+        title="任务代码编辑" 
+        size="small"
         extra={
           <Button 
             size="small" 
             icon={<CopyOutlined />}
-            onClick={() => copyToClipboard(suspendExampleCode)}
+            onClick={() => copyToClipboard(taskCode)}
           >
             复制
           </Button>
         }
         style={{ marginBottom: 24 }}
       >
-        <Input.TextArea
-          value={suspendExampleCode}
-          readOnly
-          autoSize={{ minRows: 15, maxRows: 20 }}
+        <TextArea
+          value={taskCode}
+          onChange={(e) => setTaskCode(e.target.value)}
+          placeholder="输入完整的 rtos.createTask 调用代码..."
+          rows={10}
           style={{ fontFamily: 'Monaco, Consolas, "Courier New", monospace', fontSize: '12px' }}
         />
       </Card>
+
 
     </div>
   );
