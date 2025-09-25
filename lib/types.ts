@@ -22,8 +22,9 @@ export type TaskHandle = number;
 
 /**
  * 任务函数类型 - 支持普通函数和 Generator 函数
+ * 现在接受 rtos 作为参数
  */
-export type TaskFunction = (params?: any) => void | Generator<any, any, any>;
+export type TaskFunction = (rtos: any) => void | Generator<any, any, any>;
 
 /**
  * 任务控制块 (Task Control Block)

@@ -10,6 +10,7 @@ export class TaskManager {
   private readyList: TaskHandle[] = [];
   private blockedList: TaskHandle[] = [];
   private suspendedList: TaskHandle[] = [];
+  private lastScheduledIndex: number = -1;
 
   /**
    * 创建新任务
@@ -291,8 +292,38 @@ export class TaskManager {
       return null;
     }
 
-    // 返回优先级最高的就绪任务
-    return this.readyList[0] || null;
+    // 按优先级分组
+    const priorityGroups = new Map<number, TaskHandle[]>();
+    for (const handle of this.readyList) {
+      const task = this.tasks.get(handle);
+      if (task) {
+        if (!priorityGroups.has(task.priority)) {
+          priorityGroups.set(task.priority, []);
+        }
+        priorityGroups.get(task.priority)!.push(handle);
+      }
+    }
+
+    // 找到最高优先级
+    const maxPriority = Math.max(...priorityGroups.keys());
+    const highestPriorityTasks = priorityGroups.get(maxPriority)!;
+
+    // 如果只有一个任务，直接返回
+    if (highestPriorityTasks.length === 1) {
+      return highestPriorityTasks[0] || null;
+    }
+
+    // 多个相同优先级任务，实现轮询调度
+    const currentIndex = highestPriorityTasks.findIndex(handle => handle === this.currentTask);
+    if (currentIndex === -1) {
+      // 当前任务不在列表中，从第一个开始
+      this.lastScheduledIndex = 0;
+      return highestPriorityTasks[0] || null;
+    }
+
+    // 轮询到下一个任务
+    this.lastScheduledIndex = (currentIndex + 1) % highestPriorityTasks.length;
+    return highestPriorityTasks[this.lastScheduledIndex] || null;
   }
 
   /**

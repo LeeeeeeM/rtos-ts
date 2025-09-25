@@ -293,4 +293,86 @@ describe('TaskManager', () => {
       expect(taskManager.resumeTask(taskHandle)).toBe(false);
     });
   });
+
+  describe('任务调度', () => {
+    it('应该能够获取下一个任务', () => {
+      const taskHandle = taskManager.createTask(
+        'TestTask',
+        function* () {
+          yield;
+        },
+        10,
+        2048,
+        undefined
+      );
+
+      const nextTask = taskManager.getNextTask();
+      expect(nextTask).toBe(taskHandle);
+    });
+
+    it('应该优先调度高优先级任务', () => {
+      // 创建不同优先级的任务
+      const highPriorityTask = taskManager.createTask(
+        'HighPriorityTask',
+        function* () {
+          yield;
+        },
+        20, // 高优先级
+        2048,
+        undefined
+      );
+
+      const lowPriorityTask = taskManager.createTask(
+        'LowPriorityTask',
+        function* () {
+          yield;
+        },
+        5, // 低优先级
+        2048,
+        undefined
+      );
+
+      // 高优先级任务应该先被调度
+      const nextTask = taskManager.getNextTask();
+      expect(nextTask).toBe(highPriorityTask);
+    });
+
+    it('应该能够设置和获取当前任务', () => {
+      const taskHandle = taskManager.createTask(
+        'TestTask',
+        function* () {
+          yield;
+        },
+        10,
+        2048,
+        undefined
+      );
+
+      expect(taskManager.getCurrentTask()).toBe(null);
+
+      taskManager.setCurrentTask(taskHandle);
+      expect(taskManager.getCurrentTask()).toBe(taskHandle);
+
+      taskManager.setCurrentTask(null);
+      expect(taskManager.getCurrentTask()).toBe(null);
+    });
+
+    it('应该能够切换当前任务', () => {
+      const taskHandle = taskManager.createTask(
+        'TestTask',
+        function* () {
+          yield;
+        },
+        10,
+        2048,
+        undefined
+      );
+
+      taskManager.setCurrentTask(taskHandle);
+      expect(taskManager.getCurrentTask()).toBe(taskHandle);
+
+      taskManager.yieldCurrentTask();
+      expect(taskManager.getCurrentTask()).toBe(null);
+    });
+  });
 });

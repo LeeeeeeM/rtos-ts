@@ -1,0 +1,40 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.code-block {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background-color: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.example-section {
+  margin: 16px 0;
+}
+
+.example-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #1890ff;
+}
+
+.before-after {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.before-after > div {
+  flex: 1;
+}
+
+.before-after .label {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #666;
+}

@@ -28,7 +28,7 @@ const SuspendExample: React.FC = () => {
   
   // 任务代码编辑
   const [taskCode, setTaskCode] = useState(`const taskHandle = rtos.createTask(
-  () => {
+  (rtos) => {
     console.log('任务开始运行');
     let count = 0;
     while (count < 10) {

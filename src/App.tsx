@@ -11,10 +11,13 @@ import {
   PlayCircleOutlined,
   FunctionOutlined,
   PauseOutlined,
+  CodeOutlined,
 } from "@ant-design/icons";
 import BasicExample from "./pages/basic";
-import TaskParserExample from "./pages/task-parser";
+import TaskExample from "./pages/task";
 import SuspendExample from "./pages/suspend";
+import CodeTransformPage from "./pages/code-transform";
+import TaskModePage from "./pages/task-mode";
 import LogContainer from "./components/LogContainer";
 import { LogProvider, useLog } from "./contexts/LogContext";
 import styles from "./App.module.css";
@@ -37,9 +40,19 @@ function AppContent() {
       label: <Link to="/suspend">任务挂起</Link>,
     },
     {
-      key: "/task-parser",
+      key: "/task",
       icon: <FunctionOutlined />,
-      label: <Link to="/task-parser">任务解析器</Link>,
+      label: <Link to="/task">任务调度</Link>,
+    },
+    {
+      key: "/code-transform",
+      icon: <CodeOutlined />,
+      label: <Link to="/code-transform">代码转换</Link>,
+    },
+    {
+      key: "/task-mode",
+      icon: <PlayCircleOutlined />,
+      label: <Link to="/task-mode">任务执行模式</Link>,
     },
   ];
 
@@ -65,7 +78,9 @@ function AppContent() {
               <Route path="/" element={<Navigate to="/basic" replace />} />
               <Route path="/basic" element={<BasicExample />} />
               <Route path="/suspend" element={<SuspendExample />} />
-              <Route path="/task-parser" element={<TaskParserExample />} />
+              <Route path="/task" element={<TaskExample />} />
+              <Route path="/code-transform" element={<CodeTransformPage />} />
+              <Route path="/task-mode" element={<TaskModePage />} />
             </Routes>
           </Content>
         </Layout>

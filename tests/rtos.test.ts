@@ -176,4 +176,70 @@ describe('RTOS', () => {
     });
   });
 
+  describe('Yield 模式控制', () => {
+    it('应该能够设置和获取 yield 模式', () => {
+      // 默认模式应该是 false (仅 delay 转 yield)
+      expect(rtos.getYieldMode()).toBe(false);
+
+      // 设置为全部 yield 模式
+      rtos.setYieldMode(true);
+      expect(rtos.getYieldMode()).toBe(true);
+
+      // 设置回仅 delay yield 模式
+      rtos.setYieldMode(false);
+      expect(rtos.getYieldMode()).toBe(false);
+    });
+
+    it('应该能够在构造函数中设置 yield 模式', () => {
+      const rtosWithYieldAll = new RTOS(config, { yieldAllStatements: true });
+      expect(rtosWithYieldAll.getYieldMode()).toBe(true);
+
+      const rtosWithDelayOnly = new RTOS(config, { yieldAllStatements: false });
+      expect(rtosWithDelayOnly.getYieldMode()).toBe(false);
+    });
+
+    it('应该能够动态切换 yield 模式并影响新任务', () => {
+      rtos.start();
+
+      // 设置为全部 yield 模式
+      rtos.setYieldMode(true);
+      
+      const taskHandle = rtos.createTask(
+        (rtos) => {
+          console.log('任务开始');
+          console.log('任务步骤1');
+          rtos.delay(100);
+          console.log('任务步骤2');
+        },
+        5,
+        2048,
+        undefined,
+        'YieldAllTask'
+      );
+
+      expect(taskHandle).toBeGreaterThan(0);
+
+      // 切换回仅 delay yield 模式
+      rtos.setYieldMode(false);
+      
+      const taskHandle2 = rtos.createTask(
+        (rtos) => {
+          console.log('任务开始');
+          console.log('任务步骤1');
+          rtos.delay(100);
+          console.log('任务步骤2');
+        },
+        5,
+        2048,
+        undefined,
+        'DelayOnlyTask'
+      );
+
+      expect(taskHandle2).toBeGreaterThan(0);
+      expect(rtos.getSystemStatus().totalTasks).toBe(3); // 2个用户任务 + 1个空闲任务
+
+      rtos.stop();
+    });
+  });
+
 });

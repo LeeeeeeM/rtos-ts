@@ -1,49 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button, Space, Statistic, Row, Col, Typography, Alert, Input } from 'antd';
 import { PlayCircleOutlined, PauseCircleOutlined, CodeOutlined } from '@ant-design/icons';
 import { RTOS } from '../../../lib/rtos';
-import { SchedulerConfig } from '../../../lib/types';
-import { RTOSParser } from '../../../lib/parser';
 import { useLog } from '../../contexts/LogContext';
 import styles from './index.module.css';
 
 const { TextArea } = Input;
 
-const TaskParserExample: React.FC = () => {
+const TaskModePage: React.FC = () => {
   const { startCapture, stopCapture } = useLog();
+  const [isRunning, setIsRunning] = useState(false);
+  const isRunningRef = useRef(false);
   
   // 创建独立的 RTOS 实例
   const [rtos] = useState(() => {
-    const config: SchedulerConfig = {
+    const config = {
       maxTasks: 10,
-      tickRate: 10, // 每秒10个时钟节拍
+      tickRate: 10,
       stackSize: 4096,
       idleTaskStackSize: 1024,
     };
     return new RTOS(config);
   });
-  const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState(rtos.getSystemStatus());
-  const isRunningRef = useRef(false);
-  const [originalCode, setOriginalCode] = useState(`
-    rtos.createTask(() => {
-    console.log("start 1");
-    while (1) {
-        rtos.delay(20);
-        console.log("task 1");
-    }
-}, 5);
+  
+  // 任务代码
+  const [taskCode, setTaskCode] = useState(`// 创建多个任务示例 - 展示交替执行效果
+rtos.createTask((rtos) => {
+    console.log("任务A开始");
+    console.log("任务A执行步骤1");
+    rtos.delay(20);
+    console.log("任务A执行步骤2");
+    rtos.delay(30);
+    console.log("任务A完成");
+}, 10, 2048, undefined, 'TaskA');
 
-rtos.createTask(() => {
-    console.log("start 2");
-    while (1) {
-        rtos.delay(30);
-        console.log("task 2");
-    }
-}, 13);
-    `);
-  const [transformedCode, setTransformedCode] = useState<string>('');
+rtos.createTask((rtos) => {
+    console.log("任务B开始");
+    console.log("任务B执行步骤1");
+    rtos.delay(25);
+    console.log("任务B执行步骤2");
+    rtos.delay(35);
+    console.log("任务B完成");
+}, 10, 2048, undefined, 'TaskB');
 
+rtos.createTask((rtos) => {
+    console.log("任务C开始");
+    console.log("任务C执行步骤1");
+    rtos.delay(15);
+    console.log("任务C执行步骤2");
+    rtos.delay(40);
+    console.log("任务C完成");
+}, 10, 2048, undefined, 'TaskC');`);
 
   const updateStatus = () => {
     setStatus(rtos.getSystemStatus());
@@ -73,7 +81,7 @@ rtos.createTask(() => {
     rtos.start();
     setIsRunning(true);
     isRunningRef.current = true;
-    startCapture(); // 开始捕获 console.log
+    startCapture();
     console.log('🚀 系统已启动');
     updateStatus();
   };
@@ -82,32 +90,16 @@ rtos.createTask(() => {
     rtos.stop();
     setIsRunning(false);
     isRunningRef.current = false;
-    stopCapture(); // 停止捕获 console.log
+    stopCapture();
     console.log('⏹️ 系统已停止');
     updateStatus();
   };
 
-  const transformCode = () => {
-        try {
-          // 创建解析器
-          const parser = new RTOSParser();
-      
-      console.log('🔄 开始转换代码...');
-      
-      // 解析并转换代码
-      const transformed = parser.parseAndTransformToGenerator(originalCode);
-      setTransformedCode(transformed);
-      
-      console.log('✅ 代码转换完成');
-      console.log('📝 转换后的代码已显示在下方');
-      
-    } catch (error) {
-      console.log(`❌ 转换出错: ${error}`);
-    }
-  };
-
-  const runTaskParserExample = () => {
-    console.log('=== 任务解析器示例 ===');
+  const runTaskExample = (yieldAllStatements: boolean) => {
+    console.log(`=== 执行原始代码（${yieldAllStatements ? '全部 yield' : 'delay yield'} 模式） ===`);
+    
+    // 设置 RTOS 的 yield 模式
+    rtos.setYieldMode(yieldAllStatements);
     
     // 如果系统没有运行，先启动系统
     if (!isRunningRef.current) {
@@ -115,25 +107,23 @@ rtos.createTask(() => {
       rtos.start();
       setIsRunning(true);
       isRunningRef.current = true;
-      startCapture(); // 开始捕获 console.log
+      startCapture();
     }
     
     try {
-      console.log('📝 执行原始代码中的任务...');
+      console.log('📝 执行原始代码，RTOS 内部会根据当前模式自动转换...');
+      console.log('当前模式:', rtos.getYieldMode() ? "所有语句转 yield" : "仅 delay 转 yield");
       
       // 创建一个安全的执行环境
       const executeCode = new Function('rtos', 'console', `
-        ${originalCode}
+        ${taskCode}
       `);
       
-      // 执行原始代码
+      // 执行原始代码，RTOS 内部会自动转换
       executeCode(rtos, console);
       
-      console.log('✅ 原始代码执行完成，解析器会自动转换 delay() 为 yield');
+      console.log('✅ 原始代码执行完成，RTOS 内部已自动转换');
       
-      // 检查任务状态
-      const status = rtos.getSystemStatus();
-      console.log(`📊 当前状态: 总任务=${status.totalTasks}, 就绪=${status.readyTasks}, 阻塞=${status.blockedTasks}`);
     } catch (error) {
       console.log(`❌ 执行原始代码出错: ${error}`);
     }
@@ -141,14 +131,13 @@ rtos.createTask(() => {
     updateStatus();
   };
 
-
   return (
     <div className={styles.container}>
-      <Typography.Title level={2}>任务解析器示例</Typography.Title>
+      <Typography.Title level={2}>任务执行模式</Typography.Title>
       
       <Alert
-        message="演示说明"
-        description="创建包含 delay() 调用的任务，解析器会自动将 delay() 转换为 yield，实现真正的阻塞等待。"
+        message="任务执行模式"
+        description="这个示例包含3个任务，可以清楚看到两种执行模式的效果。点击下方按钮可以直接执行原始代码，RTOS 内部会根据选择的模式自动转换。"
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
@@ -181,38 +170,21 @@ rtos.createTask(() => {
         </Col>
       </Row>
 
-      <Card title="代码转换" style={{ marginBottom: 24 }}>
+      <Card title="任务代码" style={{ marginBottom: 24 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
-            <Typography.Text strong>原始代码：</Typography.Text>
+            <Typography.Text strong>任务代码：</Typography.Text>
+            <Typography.Text type="secondary">
+              （可以编辑任务代码，然后点击下方按钮来执行）
+            </Typography.Text>
             <TextArea
-              value={originalCode}
-              onChange={(e) => setOriginalCode(e.target.value)}
-              placeholder="输入包含 rtos.delay() 的代码..."
+              value={taskCode}
+              onChange={(e) => setTaskCode(e.target.value)}
+              placeholder="输入包含 rtos.delay() 的任务代码..."
               rows={8}
               style={{ marginTop: 8 }}
             />
           </div>
-          <div>
-            <Button 
-              type="primary"
-              icon={<CodeOutlined />}
-              onClick={transformCode}
-            >
-              转换代码
-            </Button>
-          </div>
-          {transformedCode && (
-            <div>
-              <Typography.Text strong>转换后的代码：</Typography.Text>
-              <TextArea
-                value={transformedCode}
-                readOnly
-                rows={8}
-                style={{ marginTop: 8, backgroundColor: '#f5f5f5' }}
-              />
-            </div>
-          )}
         </Space>
       </Card>
 
@@ -236,9 +208,15 @@ rtos.createTask(() => {
           <Button 
             type="primary"
             icon={<CodeOutlined />}
-            onClick={runTaskParserExample}
+            onClick={() => runTaskExample(true)}
           >
-            运行任务解析示例
+            执行原始代码（全部 yield 模式）
+          </Button>
+          <Button 
+            icon={<CodeOutlined />}
+            onClick={() => runTaskExample(false)}
+          >
+            执行原始代码（delay yield 模式）
           </Button>
         </Space>
       </Card>
@@ -247,4 +225,4 @@ rtos.createTask(() => {
   );
 };
 
-export default TaskParserExample;
+export default TaskModePage;

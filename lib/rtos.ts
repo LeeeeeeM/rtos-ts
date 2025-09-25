@@ -9,12 +9,14 @@ export class RTOS {
   private scheduler: Scheduler;
   private parser: RTOSParser;
   private taskCounter: number = 0;
+  private yieldAllStatements: boolean = false;
 
-  constructor(config: SchedulerConfig) {
+  constructor(config: SchedulerConfig, options?: { yieldAllStatements?: boolean }) {
     this.scheduler = new Scheduler(config);
+    this.yieldAllStatements = options?.yieldAllStatements || false;
     
     // 初始化解析器
-    this.parser = new RTOSParser();
+    this.parser = new RTOSParser({ yieldAllStatements: this.yieldAllStatements });
   }
 
   /**
@@ -31,9 +33,25 @@ export class RTOS {
     this.scheduler.stop();
   }
 
+  /**
+   * 设置 yield 模式
+   * @param yieldAllStatements true: 所有语句转 yield, false: 仅 delay 转 yield
+   */
+  setYieldMode(yieldAllStatements: boolean): void {
+    this.yieldAllStatements = yieldAllStatements;
+    this.parser = new RTOSParser({ yieldAllStatements: this.yieldAllStatements });
+  }
+
+  /**
+   * 获取当前 yield 模式
+   */
+  getYieldMode(): boolean {
+    return this.yieldAllStatements;
+  }
+
   // 任务管理接口
   createTask(
-    taskFunction: () => void,
+    taskFunction: (rtos: RTOS) => void,
     priority: number,
     stackSize?: number,
     params?: any,

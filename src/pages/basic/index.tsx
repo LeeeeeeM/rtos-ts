@@ -28,7 +28,7 @@ const BasicExample: React.FC = () => {
   // 三个独立的任务代码块
   const [highPriorityCode, setHighPriorityCode] = useState(`// 创建高优先级任务
 rtos.createTask(
-  () => {
+  (rtos) => {
     console.log('🔥 高优先级任务运行');
     rtos.delay(10); // 延时1秒
     console.log('🔥 高优先级任务运行完成');
@@ -41,7 +41,7 @@ rtos.createTask(
 
   const [mediumPriorityCode, setMediumPriorityCode] = useState(`// 创建中优先级任务
 rtos.createTask(
-  () => {
+  (rtos) => {
     console.log('⚡ 中优先级任务运行');
     rtos.delay(20); // 延时2秒
     console.log('⚡ 中优先级任务运行完成');
@@ -54,7 +54,7 @@ rtos.createTask(
 
   const [lowPriorityCode, setLowPriorityCode] = useState(`// 创建低优先级任务
 rtos.createTask(
-  () => {
+  (rtos) => {
     console.log('🐌 低优先级任务运行');
     rtos.delay(30); // 延时3秒
     console.log('🐌 低优先级任务运行完成');
